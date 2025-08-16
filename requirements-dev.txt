@@ -1,0 +1,24 @@
+langchain
+langchain-community
+langchain-core
+
+langchain-openai
+langchain-anthropic
+
+langchain-groq
+langchain-google-genai
+
+pandas
+
+faiss-cpu
+fastapi
+uvicorn
+jinja2
+python-dotenv
+python-multipart
+PyMuPDF
+structlog
+docx2txt
+pytest
+pypdf
+-e .

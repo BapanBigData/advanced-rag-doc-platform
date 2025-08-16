@@ -1,0 +1,24 @@
+faiss_db:
+  collection_name: "document_portal"
+
+embedding_model:
+  openai:
+    provider: "openai"
+    model_name: "text-embedding-3-small"   # or text-embedding-3-large
+    dimensions: 1536                      # optional, depends on FAISS index setup
+
+retriever:
+  top_k: 10
+
+llm:
+  groq:
+    provider: "groq"
+    model_name: "deepseek-r1-distill-llama-70b"
+    temperature: 0
+    max_output_tokens: 2048
+
+  openai:
+    provider: "openai"
+    model_name: "gpt-4o-mini"              # or gpt-4o, gpt-4.1, etc.
+    temperature: 0.0
+    max_output_tokens: 2048
