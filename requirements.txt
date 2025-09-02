@@ -21,4 +21,3 @@ structlog
 docx2txt
 pytest
 pypdf
--e .
