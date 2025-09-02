@@ -209,5 +209,5 @@ __marimo__/
 data/
 faiss_index/
 
-.github/workflows/aws.yaml
+
 .github/workflows/task_definition.json
