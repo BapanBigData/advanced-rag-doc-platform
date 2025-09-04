@@ -1,11 +1,15 @@
 name: CI/CD to ECS Fargate
 on:
   workflow_run:
-    workflows: ["Run Unit Tests"]   # Match the name in your ci.yaml
+    workflows: ["Run Unit Tests"] # Match the name in your ci.yaml
     types:
       - completed
 env:
   ECR_REPOSITORY: advanced-rag-system
+  ECS_SERVICE: advanced-rag-service
+  ECS_CLUSTER: advanced-rag-cluster
+  ECS_TASK_DEFINITION: .github/workflows/task_definition.json
+  CONTAINER_NAME: advanced-rag-container
 
 permissions:
   id-token: write
@@ -54,3 +58,39 @@ jobs:
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
           echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+    # -------------------------------
+    # 2. Deploy to ECS
+    # -------------------------------
+    deploy:
+      name: Deploy to ECS Fargate
+      needs: build-and-push
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Repo
+          uses: actions/checkout@v4
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Render Task Definition
+          id: render-task
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
+          with:
+            task-definition: ${{ env.ECS_TASK_DEFINITION }}
+            container-name: ${{ env.CONTAINER_NAME }}
+            image: ${{ needs.build-and-push.outputs.image }}
+        - name: Print Rendered Task
+          run: cat ${{ steps.render-task.outputs.task-definition }}
+        - name: Deploy to ECS
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+          with:
+            task-definition: ${{ steps.render-task.outputs.task-definition }}
+            service: ${{ env.ECS_SERVICE }}
+            cluster: ${{ env.ECS_CLUSTER }}
+            wait-for-service-stability: true
+        - name: Done!
+          run: echo "Deployed to ECS Fargate Successfully"

@@ -1,0 +1,48 @@
+{
+    "family": "advancedragtd",
+    "networkMode": "awsvpc",
+    "executionRoleArn": "arn:aws:iam::275876723604:role/ecsTaskExecutionRole",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "8192",
+    "containerDefinitions": [
+        {
+            "name": "advanced-rag-container",
+            "image": "275876723604.dkr.ecr.us-east-1.amazonaws.com/advanced-rag-system",
+            "cpu": 1024,
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp",
+                    "name": "advanced-rag-container-8080-tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "ENV",
+                    "value": "production"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "advanced_rag_api_keys",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:275876723604:secret:advanced_rag_api_keys-FChhkH"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/advancedragtd",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs",
+                    "awslogs-create-group": "true"
+                }
+            }
+        }
+    ]
+}

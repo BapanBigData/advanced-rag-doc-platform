@@ -208,6 +208,3 @@ __marimo__/
 
 data/
 faiss_index/
-
-
-.github/workflows/task_definition.json
