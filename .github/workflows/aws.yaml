@@ -3,8 +3,7 @@ name: CI/CD to ECS Fargate
 on:
   workflow_run:
     workflows: ["Run Unit Tests"] # Match the name in your ci.yaml
-    types:
-      - completed
+    types: [completed]
 
 env:
   ECR_REPOSITORY: advanced-rag-system
@@ -25,15 +24,13 @@ jobs:
       - name: CI passed on main branch
         run: echo "CI passed on main branch, proceeding to build and deploy."
 
-  # -------------------------------
-  # 1) Build & Push Docker Image
-  # -------------------------------
   build-and-push:
     name: Build & Push Docker Image
     needs: [check-status]
     runs-on: ubuntu-latest
+    # publish the job-level output explicitly from a dedicated step id
     outputs:
-      image: ${{ steps.build-image.outputs.image }}
+      image: ${{ steps.export-image.outputs.image }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -55,15 +52,22 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          set -e
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-          docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
-          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+          echo "Building $IMAGE_URI"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          # also export to environment so we can echo in the next step
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
 
-  # -------------------------------
-  # 2) Deploy to ECS
-  # -------------------------------
+      - name: Export image URI as output
+        id: export-image
+        run: |
+          echo "image=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Debug — print image uri
+        run: echo "Built image: ${{ steps.export-image.outputs.image }}"
+
   deploy:
     name: Deploy to ECS Fargate
     needs: build-and-push
@@ -88,12 +92,12 @@ jobs:
           image: ${{ needs.build-and-push.outputs.image }}
 
       - name: Print Rendered Task
-        run: cat ${{ steps.render-task.outputs.task-definition }}
+        run: cat ${{ steps.render-task.outputs['task-definition'] }}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.render-task.outputs.task-definition }}
+          task-definition: ${{ steps.render-task.outputs['task-definition'] }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
