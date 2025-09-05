@@ -10,7 +10,7 @@
     "containerDefinitions": [
         {
             "name": "advanced-rag-container",
-            "image": "275876723604.dkr.ecr.us-east-1.amazonaws.com/advanced-rag-system",
+            "image": "275876723604.dkr.ecr.us-east-1.amazonaws.com/advanced-rag-system:latest",
             "cpu": 1024,
             "essential": true,
             "portMappings": [
