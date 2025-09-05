@@ -17,14 +17,11 @@ permissions:
 jobs:
   check-status:
     runs-on: ubuntu-latest
-    if: ${{github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'}}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     steps:
       - name: CI passed on main branch
         run: echo "CI passed on main branch, proceeding to build and deploy."
 
-  # -------------------------------
-  # 1. Build & Push Docker Image
-  # -------------------------------
   build-and-push:
     name: Build & Push Docker Image
     needs: [check-status]
@@ -46,22 +43,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Docker Image (latest only)
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build and push with multiple tags (single push operation)
-          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY
-          
-          docker build \
-            -t $IMAGE_URI:$IMAGE_TAG \
-            -t $IMAGE_URI:latest \
-            .
-          
-          # Push all tags in one operation
-          docker push $IMAGE_URI --all-tags
-          
-          # Output the SHA-tagged image URI for deployment
-          echo "image=$IMAGE_URI:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "Building image: $IMAGE_URI"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+          echo "✅ Pushed: $IMAGE_URI"
